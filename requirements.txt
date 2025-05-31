@@ -1,0 +1,7 @@
+fastapi
+transformers[sentencepiece]
+torch
+torchaudio
+python-multipart
+uvicorn
+ffmpeg-python 
