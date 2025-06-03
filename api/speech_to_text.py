@@ -18,7 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-model_name = "openai/whisper-base"
+model_name = "openai/whisper-large-v3"
 processor = WhisperProcessor.from_pretrained(model_name)
 model = WhisperForConditionalGeneration.from_pretrained(model_name)
 model.eval()
@@ -42,8 +42,20 @@ def prepare_whisper_input(audio_bytes):
 async def speech_to_text(file: UploadFile = File(...)):
     audio_bytes = await file.read()
     audio = prepare_whisper_input(audio_bytes)
-    inputs = processor(audio, sampling_rate=16000, return_tensors="pt")
+    # Set language and task
+    inputs = processor(
+        audio,
+        sampling_rate=16000,
+        return_tensors="pt",
+        language="en",
+        task="transcribe"
+    )
+    # Get forced_decoder_ids for English
+    forced_decoder_ids = processor.get_decoder_prompt_ids(language="en", task="transcribe")
     with torch.no_grad():
-        generated_ids = model.generate(inputs["input_features"])
+        generated_ids = model.generate(
+            inputs["input_features"],
+            forced_decoder_ids=forced_decoder_ids
+        )
     transcription = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
     return JSONResponse({"transcription": transcription}) 
